@@ -31,8 +31,11 @@ prune: /tmp/r/$(R_VERSION)
 lib/%: /tmp/r/$(R_VERSION)
 	cp $(shell ldconfig -p | grep $(@F) | sed 's|.*=> ||g') $(R_PREFIX)/lib64/R/lib
 
+packages:
+	$(R_PREFIX)/bin/Rscript /xfer/setup.R
+
 # Build the tarball of R and all of its dependencies
-r-%.tar.gz: /tmp/r/% lib/libgfortran.so.3 lib/libquadmath.so.0 lib/libgomp.so.1 prune
+r-%.tar.gz: /tmp/r/% lib/libgfortran.so.3 lib/libquadmath.so.0 lib/libgomp.so.1 packages prune
 	tar zcf $@ -C /tmp r/$*
 
 clean:

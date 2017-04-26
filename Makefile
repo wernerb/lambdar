@@ -1,5 +1,7 @@
 # Lambdar: Build R for Amazon Linux and deploy to AWS Lambda
 name=lambdar
+bucket=mybucket
+functionname=myrlambda
 
 R_VERSION=3.3.2
 
@@ -22,11 +24,12 @@ test: r-$(R_VERSION).tar.gz
 
 # Build the zip archive for AWS Lambda
 %.zip: %.js r-$(R_VERSION).tar.gz
-	zip -qr $@ $^
+	zip -qr $@ $^ *.R
 
 # Deploy the zip to Lambda
 %.zip.json: %.zip
-	aws lambda update-function-code --function-name $* --zip-file fileb://$< > $@
+	aws s3 --region eu-west-1 cp $(name).zip s3://$(bucket)/ 
+	aws --region eu-west-1 lambda update-function-code --function-name $(functionname) --s3-bucket $(bucket) --s3-key $(name).zip
 
 clean:
 	@rm -f r-$(R_VERSION).tar.gz

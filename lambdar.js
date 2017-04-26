@@ -28,16 +28,10 @@ function install_r() {
     spawn('tar', ['xf', `/var/task/r-${version}.tar.gz`, '-C', '/tmp']);
 }
 
-function chdir_home() {
-    const path = `/tmp/${process.pid}.${Math.random()}`;
-    fs.mkdirSync(path);
-    process.env.HOME = path;
-    process.chdir(path);
-}
-
-function eval_r(expr) {
-    chdir_home();
-    return spawn(`/tmp/r/${version}/bin/Rscript`, ['-e', expr])
+function eval_rscript(file) {
+  process.env.HOME = '/tmp/r';
+  process.chdir('/tmp/r');
+  return spawn(`/tmp/r/${version}/bin/Rscript`, [file])
 }
 
 /**
@@ -54,23 +48,15 @@ exports.handler = (event, context, callback) => {
         },
     });
 
-    const redirect = (url) => callback(null, {
-        statusCode: 303,
-        headers: { 'Content-Type': 'text/html', 'Location': url },
-        body: `<html><body>You are being <a href="${url}">redirected</a>.</body></html>`
-    });
-
     switch (event.httpMethod) {
         case 'GET':
-            if (event.queryStringParameters == null || !('e' in event.queryStringParameters)) {
-                redirect('https://github.com/sjackman/lambdar');
-                break;
-            }
-        case 'POST':
-            const expr = event.httpMethod == "GET" ? event.queryStringParameters.e : event.body;
-            console.log(expr);
             install_r();
-            done(null, eval_r(expr));
+            done(null, eval_rscript(__dirname + '/script.R'));
+            break;
+        case 'POST':
+            //run specific R with parameters
+            install_r();
+            done(null, eval_rscript(__dirname + '/script.R'));
             break;
         default:
             done(new Error(`lambdar: Unsupported HTTP method "${event.httpMethod}"`));
